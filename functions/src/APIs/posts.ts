@@ -44,16 +44,17 @@ const getOnePost = async (request: Request, response: Response) => {
 
 const createPost = async (request: Request, response: Response) => {
     const { body, title, tag } = request.body;
+    const { uid, username, firstName, lastName } = request.user;
 
     const newPostItem: IPost = {
         title,
         body,
         tag,
         author: {
-            userId: request.user.uid,
-            username: request.user.username,
-            firstName: request.user.firstName,
-            lastName: request.user.lastName
+            userId: uid,
+            username: username,
+            firstName: firstName,
+            lastName: lastName
         },
         createdAt: new Date().valueOf(),
     };
@@ -87,12 +88,12 @@ const deletePost = async (request: Request, response: Response) => {
 }
 
 const editPost = async (request: Request, response: Response) => {
-    if (request.body.postId || request.body.createdAt) {
+    const { title, body, tag, postId: _postId, createdAt } = request.body;
+    const { postId } = request.params;
+
+    if (_postId || createdAt) {
         return response.status(403).json({ message: 'Not allowed to edit'});
     }
-
-    const { postId } = request.params;
-    const { title, body, tag } = request.body;
 
     if (!title && !body && !tag ) {
         return response.status(403).json({ message: 'The body is empty' })
@@ -114,17 +115,3 @@ const editPost = async (request: Request, response: Response) => {
 }
 
 export { getAllPosts, getOnePost, createPost, deletePost, editPost }
-
-// Create a postsRepository to handle the database call
-// Create a postController to handle with the bussines logic
- 
-// interface IPost {
-//     title: string
-//     body: string
-//     tag: string
-//     createdAt: number
-//     author: {
-//         id: string,
-//         username: string
-//     }
-// }
