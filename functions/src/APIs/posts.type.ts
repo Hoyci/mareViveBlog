@@ -7,6 +7,14 @@ export interface IPost {
     author: {
         userId: string
         username: string
+        firstName: string
+        lastName: string
     }
     createdAt: number,
+}
+
+export interface IPostUpdate {
+    title?: string,
+    body?: string,
+    tag?: string
 }

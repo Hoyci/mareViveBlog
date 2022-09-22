@@ -1,4 +1,6 @@
 import { IUser } from "../APIs/users.type";
+import { Request, Response, NextFunction } from "express";
+// import { ObjectSchema } from "yup";
 
 const isEmpty = (string: string) => {
    return string.trim() == '' 
@@ -51,4 +53,21 @@ const validateSignUpData = (data: IUser) => {
     };
 }
 
-export { validateLoginData, validateSignUpData }
+const requestValidator = (schema: any) => async (request: Request, response: Response, next: NextFunction) => {
+    try {
+        await schema.validate({
+            body: request.body,
+            query: request.query,
+            params: request.params,
+            user: request.user
+        });
+        return next()
+    } catch (err) {
+        if (err instanceof Error) {
+            return response.status(500).json({ error: err.message });
+        }
+        return response.status(500).json({ error: 'Error on validating request'});
+    }
+}
+
+export { validateLoginData, validateSignUpData, requestValidator }

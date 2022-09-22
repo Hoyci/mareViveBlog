@@ -17,6 +17,8 @@ const auth = async (request: Request, response: Response, next: NextFunction) =>
         request.user = decodedToken;
         const user = await db.collection("users").where("userId", "==", request.user.uid).limit(1).get();
         if (user.docs[0].data()) {
+            request.user.firstName = user.docs[0].data().firstName;
+            request.user.lastName = user.docs[0].data().lastName;
             request.user.username = user.docs[0].data().username;
             request.user.imageUrl = user.docs[0].data().imageUrl;
             return next();
