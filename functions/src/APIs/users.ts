@@ -6,21 +6,18 @@ import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
 
-import { validateLoginData, validateSignUpData } from "../util/validators";
+// import { validateSignUpData } from "../util/validators";
+// import { IUser } from "./users.type";
 import config from "../util/config";
-import { IUser } from "./users.type";
 import { admin, db } from "../util/admin";
 
 initializeApp(config);
 
 const getUserDetail = async (request: Request, response: Response) => {
-    let user = {
-        userCredentials: {} || undefined
-    }
+    const { username } = request.user;
     try {
-        const document = await db.doc(`/users/${request.user.username}`).get();
-        user.userCredentials = document.data();
-        return response.json(user);
+        const document = await db.doc(`/users/${username}`).get();        
+        return response.json({ userCredentials: document.data() })
     } catch(err) {
         return response.status(500).json({ error: err })
     }
@@ -28,10 +25,20 @@ const getUserDetail = async (request: Request, response: Response) => {
 
 const updateUserDetails = async (request: Request, response: Response) => {
     const { firstName, lastName } = request.body;
+    const { username } = request.user;
+
+    if (!firstName && !lastName) {
+        return response.status(403).json({ message: 'The body is empty' })
+    }
+
+    const updateUser = {
+        ...(firstName && { firstName }),
+        ...(lastName && { lastName })
+    };
     try {
-        let document = db.collection("users").doc(`${request.user.username}`);
-        console.log(document);
-        await document.update({ firstName, lastName });
+        let document = db.collection("users").doc(`${username}`);
+        console.log(document); // Remove this console.log
+        await document.update(updateUser);
         return response.json({ message: "Updated successfully" });
     } catch (err) {
         console.error(err);
@@ -42,17 +49,10 @@ const updateUserDetails = async (request: Request, response: Response) => {
 
 
 const loginUser = async (request: Request, response: Response) => {
-    const user: IUser = {
-        email: request.body.email,
-        password: request.body.password
-    };
-
-    const { valid, errors } = validateLoginData(user);
-    if (!valid) return response.status(400).json({errors});
-
+    const { email, password } = request.body;
     try {
         const auth = getAuth();
-        const useCredentials = await signInWithEmailAndPassword(auth, user.email, user.password);
+        const useCredentials = await signInWithEmailAndPassword(auth, email, password);
         const token = await useCredentials.user.getIdToken();
         return response.json({ token });
     } catch (err: any) {
@@ -62,37 +62,38 @@ const loginUser = async (request: Request, response: Response) => {
 }
 
 const signUpUser = async (request: Request, response: Response) => {
-    const newUser: IUser = {
-        username: request.body.username,
-        firstName: request.body.firstName,
-        lastName: request.body.lastName,
-        email: request.body.email,
-        password: request.body.password,
-        confirmPassword: request.body.confirmPassword,
-    }
+    // const newUser: IUser = {
+    //     username: request.body.username,
+    //     firstName: request.body.firstName,
+    //     lastName: request.body.lastName,
+    //     email: request.body.email,
+    //     password: request.body.password,
+    //     confirmPassword: request.body.confirmPassword,
+    // }
     
-    const { valid, errors } = validateSignUpData(newUser);
+    // const { valid, errors } = validateSignUpData(newUser);
 
-    if (!valid) return response.status(400).json(errors);
+    // if (!valid) return response.status(400).json(errors);
+    const { username, firstName, lastName, email, password } = request.body; 
 
-    const user = await db.doc(`/users/${newUser.username}`).get()
+    const user = await db.doc(`/users/${username}`).get()
     if (user.exists) {
         return response.status(400).json({ username: "This email is already taken"});
     } else {
         try {
             const auth = getAuth();
-            const createdUser = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password);
+            const createdUser = await createUserWithEmailAndPassword(auth, email, password);
             const userId = createdUser.user.uid;
             const token = await createdUser.user.getIdToken();
             const userCredentials = {
                 userId,
-                username: newUser.username,
-                firstName: newUser.firstName,
-                lastName: newUser.lastName,
-                email: newUser.email,
+                username: username,
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
                 createdAt: new Date().valueOf()
             }
-            await db.doc(`/users/${newUser.username}`).set(userCredentials);
+            await db.doc(`/users/${username}`).set(userCredentials);
             return response.status(201).json({ token });
         } catch (err: any) {
             console.log(err);
