@@ -1,8 +1,18 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import GlobalStyles from "./components/GlobalStyles";
+import NavBar from "./components/NavBar"
+
 function App() {
   return (
-    <div className="App">
-      <h1>teste</h1>
-    </div>
+    <Router>
+      <GlobalStyles />
+      <NavBar />
+      <Routes>
+        {/* <Route path="/" element={<Home />} */}
+      </Routes>
+      {/* <Footer /> */}
+      
+    </Router>
   )
 }
 
